@@ -181,6 +181,10 @@ enum mpi_req{
 #define MESSAGE_ALIGNMENT 64
 #define MESSAGE_ALIGNMENT_MR (1<<12)
 
+#define MAX_DT_BLOCK_SIZE (1 << 16)
+#define MAX_DT_STRIDE_SIZE (1 << 16)
+#define MAX_DT_REPEAT_COUNT 65536
+
 enum po_ret_type {
     PO_CUDA_NOT_AVAIL,
     PO_OPENACC_NOT_AVAIL,
@@ -219,6 +223,7 @@ enum test_subtype {
     LAT,
     LAT_MT,
     LAT_MP,
+    LAT_DT,
     NBC,
 };
 
@@ -286,6 +291,9 @@ struct options_t {
     int window_varied;
     int print_rate;
     int pairs;
+
+    int dt_block_size;
+    int dt_stride_size;
 };
 
 struct bad_usage_t{

@@ -58,6 +58,8 @@ print_header(int rank, int full)
                             fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Bandwidth (MB/s)");
                         } else if (options.subtype == LAT) {
                             fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Latency (us)");
+                        } else if (options.subtype == LAT_DT) {
+                            fprintf(stdout, "%-*s%-*s%-*s%*s\n", 10, "# Size", 10, "# Block Size", 10, "# Stride Size", FIELD_WIDTH, "Latency (us)");
                         }
                         fflush(stdout);
                 }
@@ -375,6 +377,28 @@ void set_benchmark_name (const char * name)
     benchmark_name = name;
 }
 
+static int set_dt_block_size (int value)
+{
+    if (value < 0 || value > MAX_DT_BLOCK_SIZE) {
+        return -1;
+    }
+
+    options.dt_block_size = value;
+
+    return 0;
+}
+
+static int set_dt_stride_size (int value)
+{
+    if (value < 0 || value > MAX_DT_STRIDE_SIZE) {
+        return -1;
+    }
+
+    options.dt_stride_size = value;
+
+    return 0;
+}
+
 void enable_accel_support (void)
 {
     accel_enabled = ((CUDA_ENABLED || OPENACC_ENABLED || ROCM_ENABLED) &&
@@ -408,7 +432,9 @@ int process_options (int argc, char *argv[])
             {"cuda-target",     required_argument,  0,  'r'},
             {"print-rate",      required_argument,  0,  'R'},
             {"num-pairs",       required_argument,  0,  'p'},
-            {"vary-window",     required_argument,  0,  'V'}
+            {"vary-window",     required_argument,  0,  'V'},
+            {"dt-block-size",   required_argument,  0,  'B'},
+            {"dt-stride-size",  required_argument,  0,  'S'}
             
     };
 
@@ -418,6 +444,8 @@ int process_options (int argc, char *argv[])
         if (accel_enabled) {
             if (options.subtype == BW) {
                 optstring = "+:x:i:t:m:d:W:hv";
+            } else if (options.subtype == LAT_DT) {
+                optstring = "+:x:i:m:d:B:S:hv";
             } else {
                 optstring = "+:x:i:m:d:hv";
             }
@@ -426,6 +454,8 @@ int process_options (int argc, char *argv[])
                 optstring = "+:hvm:x:i:t:";
             } else if (options.subtype == LAT_MP) {
                 optstring = "+:hvm:x:i:t:";
+            } else if (options.subtype == LAT_DT) {
+                optstring = "+:hvm:x:i:B:S:";
             } else if (options.subtype == BW) {
                 optstring = "+:hvm:x:i:t:W:";
             } else {
@@ -468,6 +498,8 @@ int process_options (int argc, char *argv[])
     options.device_array_size = 32;
     options.target = CPU;
     options.min_message_size = MIN_MESSAGE_SIZE;
+    options.dt_block_size = MIN_MESSAGE_SIZE;
+    options.dt_stride_size = MIN_MESSAGE_SIZE;
     if (options.bench == COLLECTIVE) {
         options.max_message_size = MAX_MSG_SIZE_COLL;
     } else {
@@ -498,6 +530,7 @@ int process_options (int argc, char *argv[])
             options.min_message_size = 0;
             options.sender_processes = DEF_NUM_PROCESSES;
         case LAT:
+        case LAT_DT:
         case NBC:
             if (options.bench == COLLECTIVE) {
                 options.iterations = COLL_LOOP_SMALL;
@@ -714,6 +747,22 @@ int process_options (int argc, char *argv[])
                     bad_usage.message = "Invalid option or invalid argument";
                     bad_usage.opt = c;
                     bad_usage.optarg = optarg;
+                    return PO_BAD_USAGE;
+                }
+                break;
+            case 'B':
+                if (set_dt_block_size(atoi(optarg))) {
+                    bad_usage.message = "Invalid block size";
+                    bad_usage.optarg = optarg;
+
+                    return PO_BAD_USAGE;
+                }
+                break;
+            case 'S':
+                if (set_dt_stride_size(atoi(optarg))) {
+                    bad_usage.message = "Invalid stride size";
+                    bad_usage.optarg = optarg;
+
                     return PO_BAD_USAGE;
                 }
                 break;

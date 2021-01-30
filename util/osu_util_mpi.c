@@ -336,6 +336,14 @@ void print_help_message (int rank)
         fprintf(stdout, "                              (default %d)\n", MAX_MEM_LIMIT);
     }
 
+    if (options.subtype == LAT_DT) {
+        fprintf(stdout, "  -B, --dt-block-size SIZE    set block size used by derived datatype (DDT)\n");
+        fprintf(stdout, "  -S, --dt-stride-size SIZE   set stride size used by derived datatype (DDT)\n");
+        fprintf(stdout, "                                  DDT is a vector determined by block size and stride size\n");
+        fprintf(stdout, "                                  repeat count is calculated by (message size / block size)\n");
+        fprintf(stdout, "                                  block size and stride size both have to be smaller then 65536\n");
+    }
+
     fprintf(stdout, "  -i, --iterations ITER       set iterations per message size to ITER (default 1000 for small\n");
     fprintf(stdout, "                              messages, 100 for large messages)\n");
     fprintf(stdout, "  -x, --warmup ITER           set number of warmup iterations to skip before timing (default 200)\n");
