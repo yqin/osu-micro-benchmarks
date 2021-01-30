@@ -59,7 +59,7 @@ print_header(int rank, int full)
                         } else if (options.subtype == LAT) {
                             fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Latency (us)");
                         } else if (options.subtype == LAT_DT) {
-                            fprintf(stdout, "%-*s%-*s%-*s%*s\n", 10, "# Size", 10, "# Block Size", 10, "# Stride Size", FIELD_WIDTH, "Latency (us)");
+                            fprintf(stdout, "%-*s%-*s%-*s%*s\n", 10, "# Size", 10, "# Block", 10, "# Stride", FIELD_WIDTH, "Latency (us)");
                         }
                         fflush(stdout);
                 }

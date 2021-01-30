@@ -862,15 +862,20 @@ int allocate_memory_coll (void ** buffer, size_t size, enum accel_type type)
 
 int allocate_device_buffer (char ** buffer)
 {
+    size_t buffer_size = options.max_message_size;
+    if (options.subtype == LAT_DT) {
+        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
+    }
+
     switch (options.accel) {
 #ifdef _ENABLE_CUDA_
         case CUDA:
-             CUDA_CHECK(cudaMalloc((void **)buffer, options.max_message_size));
+             CUDA_CHECK(cudaMalloc((void **)buffer, buffer_size));
             break;
 #endif
 #ifdef _ENABLE_OPENACC_
         case OPENACC:
-            *buffer = acc_malloc(options.max_message_size);
+            *buffer = acc_malloc(buffer_size);
             if (NULL == *buffer) {
                 fprintf(stderr, "Could not allocate device memory\n");
                 return 1;
@@ -879,7 +884,7 @@ int allocate_device_buffer (char ** buffer)
 #endif
 #ifdef _ENABLE_ROCM_
         case ROCM:
-             ROCM_CHECK(hipMalloc((void **)buffer, options.max_message_size));
+             ROCM_CHECK(hipMalloc((void **)buffer, buffer_size));
             break;
 #endif
         default:
@@ -925,10 +930,15 @@ int allocate_device_buffer_one_sided (char ** buffer, size_t size)
 
 int allocate_managed_buffer (char ** buffer)
 {
+    size_t buffer_size = options.max_message_size;
+    if (options.subtype == LAT_DT) {
+        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
+    }
+
     switch (options.accel) {
 #ifdef _ENABLE_CUDA_
         case CUDA:
-            CUDA_CHECK(cudaMallocManaged((void **)buffer, options.max_message_size, cudaMemAttachGlobal));
+            CUDA_CHECK(cudaMallocManaged((void **)buffer, buffer_size, cudaMemAttachGlobal));
             break;
 #endif
         default:
@@ -1020,6 +1030,10 @@ int allocate_memory_pt2pt_mul (char ** sbuf, char ** rbuf, int rank, int pairs)
 int allocate_memory_pt2pt (char ** sbuf, char ** rbuf, int rank)
 {
     unsigned long align_size = sysconf(_SC_PAGESIZE);
+    size_t buffer_size = options.max_message_size;
+    if (options.subtype == LAT_DT) {
+        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
+    }
 
     switch (rank) {
         case 0:
@@ -1044,12 +1058,12 @@ int allocate_memory_pt2pt (char ** sbuf, char ** rbuf, int rank)
                     return 1;
                 }
             } else {
-                if (posix_memalign((void**)sbuf, align_size, options.max_message_size)) {
+                if (posix_memalign((void**)sbuf, align_size, buffer_size)) {
                     fprintf(stderr, "Error allocating host memory\n");
                     return 1;
                 }
 
-                if (posix_memalign((void**)rbuf, align_size, options.max_message_size)) {
+                if (posix_memalign((void**)rbuf, align_size, buffer_size)) {
                     fprintf(stderr, "Error allocating host memory\n");
                     return 1;
                 }
@@ -1077,12 +1091,12 @@ int allocate_memory_pt2pt (char ** sbuf, char ** rbuf, int rank)
                     return 1;
                 }
             } else {
-                if (posix_memalign((void**)sbuf, align_size, options.max_message_size)) {
+                if (posix_memalign((void**)sbuf, align_size, buffer_size)) {
                     fprintf(stderr, "Error allocating host memory\n");
                     return 1;
                 }
 
-                if (posix_memalign((void**)rbuf, align_size, options.max_message_size)) {
+                if (posix_memalign((void**)rbuf, align_size, buffer_size)) {
                     fprintf(stderr, "Error allocating host memory\n");
                     return 1;
                 }
