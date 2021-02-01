@@ -37,6 +37,10 @@ main (int argc, char *argv[])
         po_ret = PO_BAD_USAGE;
     }
 
+    if (options.dt_block_size > options.min_message_size) {
+        options.min_message_size = options.dt_block_size;
+    }
+
     if (PO_OKAY == po_ret && NONE != options.accel) {
         if (init_accel()) {
             fprintf(stderr, "Error initializing device\n");
@@ -100,13 +104,6 @@ main (int argc, char *argv[])
         /* Error allocating memory */
         MPI_CHECK(MPI_Finalize());
         exit(EXIT_FAILURE);
-    }
-
-    if (options.dt_block_size > options.min_message_size) {
-        options.min_message_size = options.dt_block_size;
-    }
-    if ((options.max_message_size / options.dt_block_size) > MAX_DT_REPEAT_COUNT) {
-        options.max_message_size = options.dt_block_size * MAX_DT_REPEAT_COUNT;
     }
 
     print_header(myid, LAT);
