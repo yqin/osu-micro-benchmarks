@@ -530,7 +530,6 @@ int process_options (int argc, char *argv[])
             options.min_message_size = 0;
             options.sender_processes = DEF_NUM_PROCESSES;
         case LAT:
-        case LAT_DT:
         case NBC:
             if (options.bench == COLLECTIVE) {
                 options.iterations = COLL_LOOP_SMALL;
@@ -546,6 +545,12 @@ int process_options (int argc, char *argv[])
             if (options.bench == PT2PT) {
                 options.min_message_size = 0;
             }
+            break;
+        case LAT_DT:
+            options.iterations = LAT_DT_LOOP_SMALL;
+            options.skip = LAT_DT_SKIP_SMALL;
+            options.iterations_large = LAT_DT_LOOP_LARGE;
+            options.skip_large = LAT_DT_SKIP_LARGE;
             break;
         default:
             break;
