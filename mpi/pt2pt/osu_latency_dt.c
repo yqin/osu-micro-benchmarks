@@ -149,6 +149,8 @@ main (int argc, char *argv[])
             }
         }
 
+        MPI_CHECK(MPI_Type_free(&type));
+
         if(myid == 0) {
             double latency = (t_end - t_start) * 1e6 / (2.0 * options.iterations);
 
@@ -159,8 +161,6 @@ main (int argc, char *argv[])
                     FIELD_WIDTH, FLOAT_PRECISION, latency);
             fflush(stdout);
         }
-
-        MPI_CHECK(MPI_Type_free(&type));
     }
 
     free_memory(s_buf, r_buf, myid);
