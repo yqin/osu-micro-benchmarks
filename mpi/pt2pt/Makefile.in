@@ -80,7 +80,8 @@ build_triplet = @build@
 host_triplet = @host@
 pt2pt_PROGRAMS = osu_bibw$(EXEEXT) osu_bw$(EXEEXT) \
 	osu_latency$(EXEEXT) osu_mbw_mr$(EXEEXT) \
-	osu_multi_lat$(EXEEXT) osu_latency_dt$(EXEEXT) $(am__EXEEXT_1)
+	osu_multi_lat$(EXEEXT) osu_latency_dt$(EXEEXT) \
+	osu_multi_lat_dt$(EXEEXT) $(am__EXEEXT_1)
 @CUDA_KERNELS_TRUE@am__append_1 = ../../util/kernel.cu
 @MPI2_LIBRARY_TRUE@am__append_2 = osu_latency_mt osu_latency_mp
 @BUILD_PROFILING_LIB_TRUE@@EMBEDDED_BUILD_TRUE@am__append_3 = $(top_builddir)/../lib/lib@PMPILIBNAME@.la
@@ -157,6 +158,12 @@ am__osu_multi_lat_SOURCES_DIST = osu_multi_lat.c ../../util/osu_util.c \
 am_osu_multi_lat_OBJECTS = osu_multi_lat.$(OBJEXT) $(am__objects_2)
 osu_multi_lat_OBJECTS = $(am_osu_multi_lat_OBJECTS)
 osu_multi_lat_LDADD = $(LDADD)
+am__osu_multi_lat_dt_SOURCES_DIST = osu_multi_lat_dt.c ../../util/osu_util.c \
+	../../util/osu_util.h ../../util/osu_util_mpi.c \
+	../../util/osu_util_mpi.h ../../util/kernel.cu
+am_osu_multi_lat_dt_OBJECTS = osu_multi_lat_dt.$(OBJEXT) $(am__objects_2)
+osu_multi_lat_dt_OBJECTS = $(am_osu_multi_lat_dt_OBJECTS)
+osu_multi_lat_dt_LDADD = $(LDADD)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -211,14 +218,15 @@ am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(osu_bibw_SOURCES) $(osu_bw_SOURCES) $(osu_latency_SOURCES) \
 	$(osu_latency_mp_SOURCES) $(osu_latency_mt_SOURCES) $(osu_latency_dt_SOURCES) \
-	$(osu_mbw_mr_SOURCES) $(osu_multi_lat_SOURCES)
+	$(osu_mbw_mr_SOURCES) $(osu_multi_lat_SOURCES) $(osu_multi_lat_dt_SOURCES)
 DIST_SOURCES = $(am__osu_bibw_SOURCES_DIST) $(am__osu_bw_SOURCES_DIST) \
 	$(am__osu_latency_SOURCES_DIST) \
 	$(am__osu_latency_mp_SOURCES_DIST) \
 	$(am__osu_latency_mt_SOURCES_DIST) \
 	$(am__osu_latency_dt_SOURCES_DIST) \
 	$(am__osu_mbw_mr_SOURCES_DIST) \
-	$(am__osu_multi_lat_SOURCES_DIST)
+	$(am__osu_multi_lat_SOURCES_DIST) \
+	$(am__osu_multi_lat_dt_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -386,6 +394,7 @@ osu_multi_lat_SOURCES = osu_multi_lat.c $(UTILITIES)
 osu_latency_mt_SOURCES = osu_latency_mt.c $(UTILITIES)
 osu_latency_mp_SOURCES = osu_latency_mp.c $(UTILITIES)
 osu_latency_dt_SOURCES = osu_latency_dt.c $(UTILITIES)
+osu_multi_lat_dt_SOURCES = osu_multi_lat_dt.c $(UTILITIES)
 @EMBEDDED_BUILD_TRUE@AM_LDFLAGS = $(am__append_3) \
 @EMBEDDED_BUILD_TRUE@	$(top_builddir)/../lib/lib@MPILIBNAME@.la
 @EMBEDDED_BUILD_TRUE@AM_CPPFLAGS = -I$(top_builddir)/../src/include \
@@ -520,6 +529,10 @@ osu_multi_lat$(EXEEXT): $(osu_multi_lat_OBJECTS) $(osu_multi_lat_DEPENDENCIES) $
 	@rm -f osu_multi_lat$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(osu_multi_lat_OBJECTS) $(osu_multi_lat_LDADD) $(LIBS)
 
+osu_multi_lat_dt$(EXEEXT): $(osu_multi_lat_dt_OBJECTS) $(osu_multi_lat_dt_DEPENDENCIES) $(EXTRA_osu_multi_lat_dt_DEPENDENCIES) 
+	@rm -f osu_multi_lat_dt$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(osu_multi_lat_dt_OBJECTS) $(osu_multi_lat_dt_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f ../../util/*.$(OBJEXT)
@@ -538,6 +551,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osu_latency_dt.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osu_mbw_mr.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osu_multi_lat.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/osu_multi_lat_dt.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
