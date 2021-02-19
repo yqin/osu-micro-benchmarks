@@ -159,10 +159,11 @@ main (int argc, char *argv[])
                     FIELD_WIDTH, FLOAT_PRECISION, latency);
             fflush(stdout);
         }
+
+        MPI_CHECK(MPI_Type_free(&type));
     }
 
     free_memory(s_buf, r_buf, myid);
-    MPI_CHECK(MPI_Type_free(&type));
     MPI_CHECK(MPI_Finalize());
 
     if (NONE != options.accel) {
