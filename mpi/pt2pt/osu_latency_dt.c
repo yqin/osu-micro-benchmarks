@@ -1,7 +1,7 @@
 #define BENCHMARK "OSU MPI%s Latency Test"
 /*
  * Copyright (C) 2002-2021 the Network-Based Computing Laboratory
- * (NBCL), The Ohio State University. 
+ * (NBCL), The Ohio State University.
  *
  * Contact: Dr. D. K. Panda (panda@cse.ohio-state.edu)
  *
@@ -21,6 +21,7 @@ main (int argc, char *argv[])
     double t_start = 0.0, t_end = 0.0;
     int po_ret = 0;
     int rep_count;
+    int lengs[MAX_DT_REPEAT_COUNT], disps[MAX_DT_REPEAT_COUNT];
     MPI_Datatype type;
     options.bench = PT2PT;
     options.subtype = LAT_DT;
@@ -34,6 +35,11 @@ main (int argc, char *argv[])
     if (options.dt_block_size > options.dt_stride_size ||
         options.dt_block_size > MAX_DT_BLOCK_SIZE ||
         options.dt_stride_size > MAX_DT_STRIDE_SIZE) {
+        po_ret = PO_BAD_USAGE;
+    }
+
+    rep_count = options.max_message_size / options.dt_block_size + 1;
+    if (rep_count > MAX_DT_REPEAT_COUNT) {
         po_ret = PO_BAD_USAGE;
     }
 
@@ -120,7 +126,23 @@ main (int argc, char *argv[])
 
         /* Define DDT */
         rep_count = size / options.dt_block_size;
-        MPI_CHECK(MPI_Type_vector(rep_count, options.dt_block_size, options.dt_stride_size, MPI_CHAR, &type));
+        //fprintf(stderr, "rank %d, size %d, block_size %d, rep_count %d\n", myid, size, options.dt_block_size, rep_count);
+        if (options.dt_increase_size == 0) {
+            /* Vector */
+            MPI_CHECK(MPI_Type_vector(rep_count, options.dt_block_size, options.dt_stride_size, MPI_CHAR, &type));
+        } else {
+            /* Indexed */
+            for (i = 0; i < rep_count; i++) {
+                lengs[i] = options.dt_block_size;
+                if (i == 0) {
+                    disps[i] = 0;
+                } else {
+                    disps[i] = disps[i-1] + options.dt_stride_size + (i - 1) * options.dt_increase_size;
+                    //fprintf(stderr, "rank %d, size %d, block_size %d, rep_count %d, length %d, displacement %d\n", myid, size, options.dt_block_size, rep_count, lengs[i], disps[i]);
+                }
+            }
+            MPI_CHECK(MPI_Type_indexed(rep_count, lengs, disps, MPI_CHAR, &type));
+        }
         MPI_CHECK(MPI_Type_commit(&type));
 
         MPI_CHECK(MPI_Barrier(MPI_COMM_WORLD));
@@ -154,13 +176,15 @@ main (int argc, char *argv[])
         if(myid == 0) {
             double latency = (t_end - t_start) * 1e6 / (2.0 * options.iterations);
 
-            fprintf(stdout, "%-*d%-*d%-*d%*.*f\n",
-                    10, size, 
+            fprintf(stdout, "%-*d%-*d%-*d%-*d%*.*f\n",
+                    10, size,
                     10, options.dt_block_size,
                     10, options.dt_stride_size,
+                    10, options.dt_increase_size,
                     FIELD_WIDTH, FLOAT_PRECISION, latency);
             fflush(stdout);
         }
+        //getchar();
     }
 
     free_memory(s_buf, r_buf, myid);

@@ -185,8 +185,8 @@ enum mpi_req{
 #define MESSAGE_ALIGNMENT 64
 #define MESSAGE_ALIGNMENT_MR (1<<12)
 
-#define MAX_DT_BLOCK_SIZE (1 << 16)
-#define MAX_DT_STRIDE_SIZE (1 << 16)
+#define MAX_DT_BLOCK_SIZE (1 << 20)
+#define MAX_DT_STRIDE_SIZE (1 << 20)
 #define MAX_DT_REPEAT_COUNT 65536
 
 enum po_ret_type {
@@ -298,6 +298,7 @@ struct options_t {
 
     int dt_block_size;
     int dt_stride_size;
+    int dt_increase_size;
 };
 
 struct bad_usage_t{

@@ -338,7 +338,8 @@ void print_help_message (int rank)
 
     if (options.subtype == LAT_DT) {
         fprintf(stdout, "  -B, --dt-block-size SIZE    set block size used by derived datatype (DDT)\n");
-        fprintf(stdout, "  -S, --dt-stride-size SIZE   set stride size used by derived datatype (DDT)\n");
+        fprintf(stdout, "  -S, --dt-stride-size SIZE   set base stride size used by derived datatype (DDT)\n");
+        fprintf(stdout, "  -I, --dt-increase-size SIZE set increment stride size used by derived datatype (DDT)\n");
         fprintf(stdout, "                                  DDT is a vector determined by block size and stride size\n");
         fprintf(stdout, "                                  repeat count is calculated by (message size / block size)\n");
         fprintf(stdout, "                                  block size and stride size both have to be smaller then 65536\n");
@@ -860,13 +861,8 @@ int allocate_memory_coll (void ** buffer, size_t size, enum accel_type type)
     }
 }
 
-int allocate_device_buffer (char ** buffer)
+int allocate_device_buffer (char ** buffer, size_t buffer_size)
 {
-    size_t buffer_size = options.max_message_size;
-    if (options.subtype == LAT_DT) {
-        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
-    }
-
     switch (options.accel) {
 #ifdef _ENABLE_CUDA_
         case CUDA:
@@ -928,13 +924,8 @@ int allocate_device_buffer_one_sided (char ** buffer, size_t size)
     return 0;
 }
 
-int allocate_managed_buffer (char ** buffer)
+int allocate_managed_buffer (char ** buffer, size_t buffer_size)
 {
-    size_t buffer_size = options.max_message_size;
-    if (options.subtype == LAT_DT) {
-        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
-    }
-
     switch (options.accel) {
 #ifdef _ENABLE_CUDA_
         case CUDA:
@@ -952,35 +943,45 @@ int allocate_managed_buffer (char ** buffer)
 int allocate_memory_pt2pt_mul (char ** sbuf, char ** rbuf, int rank, int pairs)
 {
     unsigned long align_size = sysconf(_SC_PAGESIZE);
+    size_t buffer_size = options.max_message_size;
+    int rep_count;
+    if (options.subtype == LAT_DT) {
+        if (options.dt_increase_size == 0)
+            rep_count = 0;
+        else
+            rep_count = options.max_message_size / options.dt_block_size;
+        buffer_size = options.max_message_size * options.dt_stride_size / options.dt_block_size +
+                      rep_count * (rep_count + 1) / 2 * options.dt_increase_size;
+    }
 
     if (rank < pairs) {
         if ('D' == options.src) {
-            if (allocate_device_buffer(sbuf)) {
+            if (allocate_device_buffer(sbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda memory\n");
                 return 1;
             }
 
-            if (allocate_device_buffer(rbuf)) {
+            if (allocate_device_buffer(rbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda memory\n");
                 return 1;
             }
         } else if ('M' == options.src) {
-            if (allocate_managed_buffer(sbuf)) {
+            if (allocate_managed_buffer(sbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda unified memory\n");
                 return 1;
             }
 
-            if (allocate_managed_buffer(rbuf)) {
+            if (allocate_managed_buffer(rbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda unified memory\n");
                 return 1;
             }
         } else {
-            if (posix_memalign((void**)sbuf, align_size, options.max_message_size)) {
+            if (posix_memalign((void**)sbuf, align_size, buffer_size)) {
                 fprintf(stderr, "Error allocating host memory\n");
                 return 1;
             }
 
-            if (posix_memalign((void**)rbuf, align_size, options.max_message_size)) {
+            if (posix_memalign((void**)rbuf, align_size, buffer_size)) {
                 fprintf(stderr, "Error allocating host memory\n");
                 return 1;
             }
@@ -990,32 +991,32 @@ int allocate_memory_pt2pt_mul (char ** sbuf, char ** rbuf, int rank, int pairs)
         }
     } else {
         if ('D' == options.dst) {
-            if (allocate_device_buffer(sbuf)) {
+            if (allocate_device_buffer(sbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda memory\n");
                 return 1;
             }
 
-            if (allocate_device_buffer(rbuf)) {
+            if (allocate_device_buffer(rbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda memory\n");
                 return 1;
             }
         } else if ('M' == options.dst) {
-            if (allocate_managed_buffer(sbuf)) {
+            if (allocate_managed_buffer(sbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda unified memory\n");
                 return 1;
             }
 
-            if (allocate_managed_buffer(rbuf)) {
+            if (allocate_managed_buffer(rbuf, buffer_size)) {
                 fprintf(stderr, "Error allocating cuda unified memory\n");
                 return 1;
             }
         } else {
-            if (posix_memalign((void**)sbuf, align_size, options.max_message_size)) {
+            if (posix_memalign((void**)sbuf, align_size, buffer_size)) {
                 fprintf(stderr, "Error allocating host memory\n");
                 return 1;
             }
 
-            if (posix_memalign((void**)rbuf, align_size, options.max_message_size)) {
+            if (posix_memalign((void**)rbuf, align_size, buffer_size)) {
                 fprintf(stderr, "Error allocating host memory\n");
                 return 1;
             }
@@ -1031,29 +1032,35 @@ int allocate_memory_pt2pt (char ** sbuf, char ** rbuf, int rank)
 {
     unsigned long align_size = sysconf(_SC_PAGESIZE);
     size_t buffer_size = options.max_message_size;
+    int rep_count;
     if (options.subtype == LAT_DT) {
-        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1);
+        if (options.dt_increase_size == 0)
+            rep_count = 0;
+        else
+            rep_count = options.max_message_size / options.dt_block_size;
+        buffer_size = options.max_message_size * options.dt_stride_size / options.dt_block_size +
+                      rep_count * (rep_count + 1) / 2 * options.dt_increase_size;
     }
 
     switch (rank) {
         case 0:
             if ('D' == options.src) {
-                if (allocate_device_buffer(sbuf)) {
+                if (allocate_device_buffer(sbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda memory\n");
                     return 1;
                 }
 
-                if (allocate_device_buffer(rbuf)) {
+                if (allocate_device_buffer(rbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda memory\n");
                     return 1;
                 }
             } else if ('M' == options.src) {
-                if (allocate_managed_buffer(sbuf)) {
+                if (allocate_managed_buffer(sbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda unified memory\n");
                     return 1;
                 }
 
-                if (allocate_managed_buffer(rbuf)) {
+                if (allocate_managed_buffer(rbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda unified memory\n");
                     return 1;
                 }
@@ -1071,22 +1078,22 @@ int allocate_memory_pt2pt (char ** sbuf, char ** rbuf, int rank)
             break;
         case 1:
             if ('D' == options.dst) {
-                if (allocate_device_buffer(sbuf)) {
+                if (allocate_device_buffer(sbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda memory\n");
                     return 1;
                 }
 
-                if (allocate_device_buffer(rbuf)) {
+                if (allocate_device_buffer(rbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda memory\n");
                     return 1;
                 }
             } else if ('M' == options.dst) {
-                if (allocate_managed_buffer(sbuf)) {
+                if (allocate_managed_buffer(sbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda unified memory\n");
                     return 1;
                 }
 
-                if (allocate_managed_buffer(rbuf)) {
+                if (allocate_managed_buffer(rbuf, buffer_size)) {
                     fprintf(stderr, "Error allocating cuda unified memory\n");
                     return 1;
                 }
@@ -1599,6 +1606,17 @@ void allocate_atomic_memory(int rank,
     int page_size;
     int purehost = 0;
     int mem_on_dev = 0;
+    size_t buffer_size = options.max_message_size;
+    int rep_count;
+    if (options.subtype == LAT_DT) {
+        if (options.dt_increase_size == 0)
+            rep_count = 0;
+        else
+            rep_count = options.max_message_size / options.dt_block_size + 1;
+        buffer_size = options.max_message_size * (options.dt_stride_size / options.dt_block_size + 1) +
+                      rep_count * (rep_count - 1) / 2 * options.dt_increase_size;
+    }
+
 
     page_size = getpagesize();
     assert(page_size <= MAX_ALIGNMENT);
@@ -1614,14 +1632,14 @@ void allocate_atomic_memory(int rank,
     }
 
     if (mem_on_dev) {
-        CHECK(allocate_device_buffer(sbuf));
+        CHECK(allocate_device_buffer(sbuf, buffer_size));
         set_device_memory(*sbuf, 'a', size);
-        CHECK(allocate_device_buffer(win_base));
+        CHECK(allocate_device_buffer(win_base, buffer_size));
         set_device_memory(*win_base, 'b', size);
-        CHECK(allocate_device_buffer(tbuf));
+        CHECK(allocate_device_buffer(tbuf, buffer_size));
         set_device_memory(*tbuf, 'c', size);
         if (cbuf != NULL) {
-            CHECK(allocate_device_buffer(cbuf));
+            CHECK(allocate_device_buffer(cbuf, buffer_size));
             set_device_memory(*cbuf, 'a', size);
         }
     } else {

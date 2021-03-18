@@ -59,7 +59,7 @@ print_header(int rank, int full)
                         } else if (options.subtype == LAT) {
                             fprintf(stdout, "%-*s%*s\n", 10, "# Size", FIELD_WIDTH, "Latency (us)");
                         } else if (options.subtype == LAT_DT) {
-                            fprintf(stdout, "%-*s%-*s%-*s%*s\n", 10, "# Size", 10, "# Block", 10, "# Stride", FIELD_WIDTH, "Latency (us)");
+                            fprintf(stdout, "%-*s%-*s%-*s%-*s%*s\n", 10, "# Size", 10, "# Block", 10, "# Stride", 10, "# Increase", FIELD_WIDTH, "Latency (us)");
                         }
                         fflush(stdout);
                 }
@@ -399,6 +399,17 @@ static int set_dt_stride_size (int value)
     return 0;
 }
 
+static int set_dt_increase_size (int value)
+{
+    if (value < 0) {
+        return -1;
+    }
+
+    options.dt_increase_size = value;
+
+    return 0;
+}
+
 void enable_accel_support (void)
 {
     accel_enabled = ((CUDA_ENABLED || OPENACC_ENABLED || ROCM_ENABLED) &&
@@ -434,7 +445,8 @@ int process_options (int argc, char *argv[])
             {"num-pairs",       required_argument,  0,  'p'},
             {"vary-window",     required_argument,  0,  'V'},
             {"dt-block-size",   required_argument,  0,  'B'},
-            {"dt-stride-size",  required_argument,  0,  'S'}
+            {"dt-stride-size",  required_argument,  0,  'S'},
+            {"dt-increase-size",required_argument,  0,  'I'}
             
     };
 
@@ -445,7 +457,7 @@ int process_options (int argc, char *argv[])
             if (options.subtype == BW) {
                 optstring = "+:x:i:t:m:d:W:hv";
             } else if (options.subtype == LAT_DT) {
-                optstring = "+:x:i:m:d:B:S:hv";
+                optstring = "+:x:i:m:d:B:S:I:hv";
             } else {
                 optstring = "+:x:i:m:d:hv";
             }
@@ -455,7 +467,7 @@ int process_options (int argc, char *argv[])
             } else if (options.subtype == LAT_MP) {
                 optstring = "+:hvm:x:i:t:";
             } else if (options.subtype == LAT_DT) {
-                optstring = "+:hvm:x:i:B:S:";
+                optstring = "+:hvm:x:i:B:S:I:";
             } else if (options.subtype == BW) {
                 optstring = "+:hvm:x:i:t:W:";
             } else {
@@ -500,6 +512,7 @@ int process_options (int argc, char *argv[])
     options.min_message_size = MIN_MESSAGE_SIZE;
     options.dt_block_size = MIN_MESSAGE_SIZE;
     options.dt_stride_size = MIN_MESSAGE_SIZE;
+    options.dt_increase_size = 0;
     if (options.bench == COLLECTIVE) {
         options.max_message_size = MAX_MSG_SIZE_COLL;
     } else {
@@ -765,7 +778,15 @@ int process_options (int argc, char *argv[])
                 break;
             case 'S':
                 if (set_dt_stride_size(atoi(optarg))) {
-                    bad_usage.message = "Invalid stride size";
+                    bad_usage.message = "Invalid base stride size";
+                    bad_usage.optarg = optarg;
+
+                    return PO_BAD_USAGE;
+                }
+                break;
+            case 'I':
+                if (set_dt_increase_size(atoi(optarg))) {
+                    bad_usage.message = "Invalid increment stride size";
                     bad_usage.optarg = optarg;
 
                     return PO_BAD_USAGE;
