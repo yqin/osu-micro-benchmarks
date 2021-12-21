@@ -10,6 +10,7 @@
  */
 
 #include <osu_util_mpi.h>
+#include <omp.h>
 
 #ifdef _ENABLE_CUDA_KERNEL_
 double measure_kernel_lo(char **, int, int);
@@ -50,7 +51,12 @@ main (int argc, char *argv[])
         r_buf = malloc(sizeof(char *) * 1);
     }
     
+#pragma omp parallel num_threads(2)
+{
     MPI_CHECK(MPI_Init(&argc, &argv));
+
+#pragma omp master
+{
     MPI_CHECK(MPI_Comm_size(MPI_COMM_WORLD, &numprocs));
     MPI_CHECK(MPI_Comm_rank(MPI_COMM_WORLD, &myid));
 
@@ -238,6 +244,9 @@ main (int argc, char *argv[])
     free(r_buf);
 
     MPI_CHECK(MPI_Finalize());
+} // master
+
+} // parallel
 
     if (NONE != options.accel) {
         if (cleanup_accel()) {
