@@ -82,6 +82,7 @@ host_triplet = @host@
 @OSHM_TRUE@am__append_2 = openshmem
 @UPC_TRUE@am__append_3 = upc
 @UPCXX_TRUE@am__append_4 = upcxx
+@NCCL_TRUE@am__append_5 = nccl
 subdir = .
 DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(top_srcdir)/configure $(am__configure_deps) \
@@ -181,7 +182,7 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 CSCOPE = cscope
-DIST_SUBDIRS = mpi openshmem upc upcxx
+DIST_SUBDIRS = mpi openshmem upc upcxx nccl
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -347,7 +348,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 SUBDIRS = $(am__append_1) $(am__append_2) $(am__append_3) \
-	$(am__append_4)
+	$(am__append_4) $(am__append_5)
 @CUDA_TRUE@dist_pkglibexec_SCRIPTS = get_local_rank
 @ROCM_TRUE@dist_pkglibexec_SCRIPTS = get_local_rank
 EXTRA_DIST = README CHANGES COPYRIGHT

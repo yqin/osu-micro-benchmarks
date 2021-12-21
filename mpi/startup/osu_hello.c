@@ -24,7 +24,7 @@ int main(int argc, char **argv)
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
 
-    if(myid == 0) {
+    if (myid == 0) {
         fprintf(stdout, HEADER);
         fprintf(stdout, "This is a test with %d processes\n", numprocs);
         fflush(stdout);
